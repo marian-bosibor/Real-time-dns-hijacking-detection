@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>DNS Hijacking Detection Dashboard</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            margin: 30px auto;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(220px, 1fr));
+
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .status {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #e5e7eb;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .empty {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<header>
+
+    <h1>DNS Hijacking Detection Dashboard</h1>
+
+    <p>
+        Real-Time DNS Hijacking Detection and Auto-Recovery System
+    </p>
+
+</header>
+
+
+<div class="container">
+
+
+    <!-- SYSTEM STATUS -->
+
+    <div class="section">
+
+        <h2>System Status</h2>
+
+        <div class="cards">
+
+            <div class="card">
+
+                <h3>Protection Status</h3>
+
+                <div class="status">
+
+                    {% if system_state %}
+
+                        {{ system_state.status }}
+
+                    {% else %}
+
+                        Not Available
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>Network Interface</h3>
+
+                {% if system_state %}
+
+                    {{ system_state.interface_alias }}
+
+                {% else %}
+
+                    Not Available
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>Current DNS Servers</h3>
+
+                {% if system_state and system_state.dns_servers %}
+
+                    {{ system_state.dns_servers | join(", ") }}
+
+                {% else %}
+
+                    Not Available
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>Last Updated</h3>
+
+                {% if system_state %}
+
+                    {{ system_state.updated_at }}
+
+                {% else %}
+
+                    Not Available
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- INCIDENTS -->
+
+    <div class="section">
+
+        <h2>Security Incidents</h2>
+
+        {% if incidents %}
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+                    <th>Interface</th>
+                    <th>Current DNS</th>
+                    <th>Trusted DNS</th>
+                    <th>Detected At</th>
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for incident in incidents %}
+
+                <tr>
+
+                    <td>
+                        {{ incident.id }}
+                    </td>
+
+                    <td>
+                        {{ incident.interface_alias }}
+                    </td>
+
+                    <td>
+                        {{ incident.current_dns | join(", ") }}
+                    </td>
+
+                    <td>
+                        {{ incident.trusted_dns | join(", ") }}
+                    </td>
+
+                    <td>
+                        {{ incident.detected_at }}
+                    </td>
+
+                    <td>
+                        {{ incident.status }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+            <div class="empty">
+                No DNS security incidents recorded.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- DNS HISTORY -->
+
+    <div class="section">
+
+        <h2>DNS Configuration History</h2>
+
+        {% if dns_history %}
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+                    <th>Interface</th>
+                    <th>DNS Servers</th>
+                    <th>Recorded At</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for record in dns_history %}
+
+                <tr>
+
+                    <td>
+                        {{ record.id }}
+                    </td>
+
+                    <td>
+                        {{ record.interface_alias }}
+                    </td>
+
+                    <td>
+                        {{ record.dns_servers | join(", ") }}
+                    </td>
+
+                    <td>
+                        {{ record.recorded_at }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+            <div class="empty">
+                No DNS history records available.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+</div>
+
+</body>
+
+</html>

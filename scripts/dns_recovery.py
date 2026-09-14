@@ -2,15 +2,15 @@
 DNS Recovery Module
 
 Restores Windows DNS configuration to the trusted
-DNS baseline using PowerShell.
+DNS baseline using netsh.
 """
 
 import subprocess
 
 
-def build_recovery_command(interface_alias, trusted_dns):
+def build_recovery_commands(interface_alias, trusted_dns):
     """
-    Build the PowerShell command used to restore
+    Build the netsh commands used to restore
     the trusted DNS servers.
     """
 
@@ -22,21 +22,34 @@ def build_recovery_command(interface_alias, trusted_dns):
 
     dns_servers = [str(server).strip() for server in trusted_dns]
 
-    server_addresses = ",".join(
-        f'"{server}"' for server in dns_servers
-    )
+    commands = []
 
-    command = [
-        "powershell",
-        "-Command",
-        (
-            f'Set-DnsClientServerAddress '
-            f'-InterfaceAlias "{interface_alias}" '
-            f'-ServerAddresses {server_addresses}'
-        )
-    ]
+    # Set the primary DNS server
+    commands.append([
+        "netsh",
+        "interface",
+        "ip",
+        "set",
+        "dns",
+        f"name={interface_alias}",
+        "static",
+        dns_servers[0]
+    ])
 
-    return command
+    # Add additional DNS servers
+    for index, server in enumerate(dns_servers[1:], start=2):
+        commands.append([
+            "netsh",
+            "interface",
+            "ip",
+            "add",
+            "dns",
+            f"name={interface_alias}",
+            server,
+            f"index={index}"
+        ])
+
+    return commands
 
 
 def clear_dns_cache():
@@ -65,7 +78,8 @@ def clear_dns_cache():
     except subprocess.CalledProcessError as error:
         return {
             "success": False,
-            "error": error.stderr.strip()
+            "error": error.stderr.strip(),
+            "return_code": error.returncode
         }
 
 
@@ -73,11 +87,11 @@ def recover_dns(interface_alias, trusted_dns, dry_run=False):
     """
     Restore DNS configuration to the trusted baseline.
 
-    When dry_run=True, the command is displayed but
-    not executed.
+    When dry_run=True, the commands are displayed
+    but not executed.
     """
 
-    command = build_recovery_command(
+    commands = build_recovery_commands(
         interface_alias,
         trusted_dns
     )
@@ -86,24 +100,30 @@ def recover_dns(interface_alias, trusted_dns, dry_run=False):
         return {
             "success": True,
             "dry_run": True,
-            "command": command
+            "commands": commands
         }
 
+    outputs = []
+
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        for command in commands:
+
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            outputs.append(result.stdout.strip())
 
         cache_result = clear_dns_cache()
 
         return {
             "success": True,
             "dry_run": False,
-            "command": command,
-            "output": result.stdout.strip(),
+            "commands": commands,
+            "output": "\n".join(outputs),
             "cache_cleared": cache_result["success"],
             "cache_output": cache_result.get("output", ""),
             "cache_error": cache_result.get("error", "")
@@ -113,8 +133,10 @@ def recover_dns(interface_alias, trusted_dns, dry_run=False):
         return {
             "success": False,
             "dry_run": False,
-            "command": command,
-            "error": error.stderr.strip()
+            "commands": commands,
+            "output": error.stdout.strip(),
+            "error": error.stderr.strip(),
+            "return_code": error.returncode
         }
 
 
@@ -135,5 +157,20 @@ if __name__ == "__main__":
     print("-----------------")
     print("Success:", result["success"])
     print("Dry run:", result["dry_run"])
-    print("Command:")
-    print(" ".join(result["command"]))
+
+    print("\nCommands:")
+
+    for command in result["commands"]:
+        print(" ".join(command))
+
+    print("\nOutput:")
+    print(result.get("output", ""))
+
+    print("\nError:")
+    print(result.get("error", ""))
+
+    print("\nCache cleared:")
+    print(result.get("cache_cleared", "N/A"))
+
+    print("\nReturn code:")
+    print(result.get("return_code", "N/A"))
