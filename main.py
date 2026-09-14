@@ -12,14 +12,38 @@ from scripts.dns_detection import (
 )
 from scripts.dns_recovery import recover_dns
 from scripts.dns_recovery_verification import verify_dns_recovery
+from flask import Flask, render_template
 from scripts.database import (
     initialize_database,
     get_active_baseline,
     record_dns_history,
     record_incident,
     record_recovery_action,
-    update_system_state
+    update_system_state,
+    get_system_state,
+    get_incidents,
+    get_dns_history
 )
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def dashboard():
+    """
+    Display the DNS monitoring dashboard.
+    """
+
+    system_state = get_system_state()
+    incidents = get_incidents()
+    dns_history = get_dns_history()
+
+    return render_template(
+        "dashboard.html",
+        system_state=system_state,
+        incidents=incidents,
+        dns_history=dns_history
+    )
 
 
 def run_dns_check(interface_alias):
