@@ -290,9 +290,10 @@ def get_active_baseline(interface_alias, db_path=DEFAULT_DB_PATH):
     }
 
 
+
 def get_dns_history(interface_alias=None, db_path=DEFAULT_DB_PATH):
     """
-    Retrieve DNS configuration history.
+    Retrieve the 50 most recent DNS configuration history records.
 
     If interface_alias is provided, only records for that
     interface are returned.
@@ -306,7 +307,8 @@ def get_dns_history(interface_alias=None, db_path=DEFAULT_DB_PATH):
                 SELECT *
                 FROM dns_history
                 WHERE interface_alias = ?
-                ORDER BY id ASC
+                ORDER BY id DESC
+                LIMIT 50
                 """,
                 (interface_alias,)
             ).fetchall()
@@ -315,7 +317,8 @@ def get_dns_history(interface_alias=None, db_path=DEFAULT_DB_PATH):
                 """
                 SELECT *
                 FROM dns_history
-                ORDER BY id ASC
+                ORDER BY id DESC
+                LIMIT 50
                 """
             ).fetchall()
 
@@ -330,6 +333,7 @@ def get_dns_history(interface_alias=None, db_path=DEFAULT_DB_PATH):
     ]
 
 
+
 def get_incidents(db_path=DEFAULT_DB_PATH):
     """
     Retrieve all recorded DNS incidents.
@@ -341,7 +345,8 @@ def get_incidents(db_path=DEFAULT_DB_PATH):
             """
             SELECT *
             FROM incidents
-            ORDER BY id ASC
+            ORDER BY id DESC
+            LIMIT 20
             """
         ).fetchall()
 
@@ -371,6 +376,7 @@ def get_recovery_actions(incident_id, db_path=DEFAULT_DB_PATH):
             FROM recovery_actions
             WHERE incident_id = ?
             ORDER BY id ASC
+            LIMIT 50
             """,
             (incident_id,)
         ).fetchall()
